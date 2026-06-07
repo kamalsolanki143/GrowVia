@@ -10,7 +10,7 @@ const steps = [
     title: "Discover Yourself",
     description:
       "Take the Career DNA test to uncover your natural strengths, interests, and the career paths that align with who you truly are.",
-    gradient: "from-cyan-500 to-blue-500",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
   {
     number: "02",
@@ -18,7 +18,7 @@ const steps = [
     title: "Build Yourself",
     description:
       "Follow your personalized roadmap with daily missions, skill-building challenges, and curated opportunities matched to your DNA.",
-    gradient: "from-violet-500 to-purple-600",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
   {
     number: "03",
@@ -26,7 +26,7 @@ const steps = [
     title: "Prove Yourself",
     description:
       "Share your Talent Passport — a verified, living portfolio that showcases your skills, achievements, and career readiness to the world.",
-    gradient: "from-amber-500 to-orange-500",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
 ];
 
@@ -51,7 +51,7 @@ const stepVariants = {
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 sm:py-32 relative bg-secondary/50">
+    <section id="how-it-works" className="py-32 sm:py-40 relative bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section title */}
         <motion.div
@@ -61,9 +61,9 @@ export default function HowItWorks() {
           transition={{ duration: 0.6 }}
           className="text-center mb-20"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6">
             Three Steps to{" "}
-            <span className="text-gradient">Career Clarity</span>
+            <span className="text-brand-primary">Career Clarity</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             A simple, proven path from confusion to confidence.
@@ -78,16 +78,21 @@ export default function HowItWorks() {
           viewport={{ once: true, margin: "-50px" }}
           className="relative"
         >
-          {/* Connecting line — desktop */}
-          <div className="hidden lg:block absolute top-1/2 left-[10%] right-[10%] h-px bg-gradient-to-r from-cyan-500 via-violet-500 to-amber-500 opacity-30 -translate-y-1/2" />
+          {/* Connecting animated line — desktop */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 }}
+            className="hidden lg:block absolute top-[40px] left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-[var(--grad-1)] to-[var(--grad-2)] opacity-60 origin-left z-0"
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {steps.map((step) => (
               <motion.div
                 key={step.number}
                 variants={stepVariants}
-                whileHover={{ scale: 1.02 }}
-                className="relative flex flex-col items-center text-center"
+                className="relative flex flex-col items-center text-center hover-lift hover-scale z-10"
               >
                 {/* Step number */}
                 <div className="relative mb-6">

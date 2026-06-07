@@ -68,23 +68,28 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left — Brand visual */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-violet-600/20 via-brand-primary/20 to-violet-600/10">
-        <div className="absolute inset-0 grid-bg dark:grid-bg" />
-        <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-violet-600/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 bg-brand-primary/20 rounded-full blur-3xl" />
-        <div className="relative z-10 flex flex-col items-center justify-center w-full p-12">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#fef3e8] dark:bg-[#0d0d0f]">
+        <div className="absolute inset-0 grid-bg dark:grid-bg opacity-50" />
+        
+        {/* Glows */}
+        <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,#e8650a20_0%,transparent_70%)] dark:bg-[radial-gradient(ellipse_at_center,#e8650a25_0%,transparent_70%)] pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center w-full p-12 text-[#2d1a0a] dark:text-[#f0f0f0]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-violet-600 to-brand-primary flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-violet-600/30">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-[#e8650a] to-[#ff8c42] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-brand-primary/30">
               <span className="text-white font-bold text-4xl">G</span>
             </div>
             <h2 className="text-3xl font-bold mb-4">Start Your Journey</h2>
-            <p className="text-muted-foreground max-w-sm text-lg">
+            <p className="opacity-80 max-w-sm text-lg mb-6 mx-auto">
               Join thousands of students who are taking control of their career.
+            </p>
+            <p className="text-[#e8650a] font-bold tracking-wide uppercase text-sm">
+              Your Career, Engineered.
             </p>
           </motion.div>
         </div>

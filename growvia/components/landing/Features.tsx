@@ -15,37 +15,37 @@ const features = [
     icon: Dna,
     title: "Career DNA",
     description: "Discover your strengths and best-fit career path",
-    gradient: "from-cyan-500 to-blue-500",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
   {
     icon: Radar,
     title: "Opportunity Radar",
     description: "Find internships, hackathons, fellowships that match you",
-    gradient: "from-violet-500 to-purple-600",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
   {
     icon: Target,
     title: "Daily Missions",
     description: "Know exactly what to do every single day",
-    gradient: "from-amber-500 to-orange-500",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
   {
     icon: TrendingUp,
     title: "Talent Score",
     description: "Track your employability in real time",
-    gradient: "from-emerald-500 to-green-500",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
   {
     icon: Bot,
     title: "AI Career Coach",
     description: "24/7 personalized guidance",
-    gradient: "from-pink-500 to-rose-500",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
   {
     icon: BadgeCheck,
     title: "Talent Passport",
     description: "One link that replaces your resume",
-    gradient: "from-cyan-500 to-violet-500",
+    gradient: "from-[var(--grad-1)] to-[var(--grad-2)]",
   },
 ];
 
@@ -71,7 +71,7 @@ const cardVariants = {
 
 export default function Features() {
   return (
-    <section id="features" className="py-24 sm:py-32 relative">
+    <section id="features" className="py-32 sm:py-40 relative bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section title */}
         <motion.div
@@ -81,9 +81,9 @@ export default function Features() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6">
             Everything You Need to{" "}
-            <span className="text-gradient">Succeed</span>
+            <span className="text-brand-primary">Succeed</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             All the tools you need to discover, build, and prove your career
@@ -103,10 +103,9 @@ export default function Features() {
             <motion.div
               key={feature.title}
               variants={cardVariants}
-              whileHover={{ scale: 1.02, y: -4 }}
-              className="group relative rounded-2xl border border-border bg-card p-7 transition-all duration-300 hover:border-brand-primary/30 hover:shadow-lg hover:shadow-brand-primary/5 cursor-default overflow-hidden"
+              className="group relative rounded-2xl border border-border dark:border-[#2a2a35] bg-card dark:bg-[#141418] p-7 cursor-default overflow-hidden hover-lift shadow-sm dark:shadow-none transition-all duration-300 dark:hover:border-brand-primary dark:hover:shadow-[0_0_20px_rgba(232,101,10,0.15)] hover:border-brand-primary hover:shadow-[0_0_20px_rgba(232,101,10,0.15)]"
             >
-              {/* Hover glow effect */}
+              {/* Hover glow effect (subtle background tint) */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-brand-primary/5 to-transparent pointer-events-none" />
 
               {/* Icon */}
