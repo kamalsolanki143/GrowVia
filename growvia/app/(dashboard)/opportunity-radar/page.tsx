@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Radar, SearchX } from "lucide-react";
 import OpportunityCard from "@/components/opportunity/OpportunityCard";
 import OpportunityFilters from "@/components/opportunity/OpportunityFilters";
-import { mockOpportunities } from "@/mock/opportunities";
+import { supabase } from "@/lib/supabase";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -28,20 +28,29 @@ export default function OpportunityRadarPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [domainFilter, setDomainFilter] = useState("all");
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: Replace mock data with real fetch
+  useEffect(() => {
+    async function loadOpps() {
+      const { data } = await supabase.from('opportunities').select('*').order('created_at', { ascending: false });
+      if (data) setOpportunities(data);
+      setLoading(false);
+    }
+    loadOpps();
+  }, []);
   const filtered = useMemo(() => {
-    return mockOpportunities.filter((opp) => {
+    return opportunities.filter((opp) => {
       const matchesSearch = opp.title
         .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+        .includes(searchQuery.toLowerCase()) || (opp.company || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType =
         typeFilter === "all" || opp.type === typeFilter;
       const matchesDomain =
         domainFilter === "all" || opp.domain === domainFilter;
       return matchesSearch && matchesType && matchesDomain;
     });
-  }, [searchQuery, typeFilter, domainFilter]);
+  }, [searchQuery, typeFilter, domainFilter, opportunities]);
 
   return (
     <motion.div

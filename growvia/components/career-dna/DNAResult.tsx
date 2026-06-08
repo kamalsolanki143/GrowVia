@@ -17,26 +17,7 @@ const traits = [
   { key: "designer_score" as const, label: "Designer", color: "from-pink-500 to-rose-500", bg: "bg-pink-500" },
 ];
 
-const careerPaths = [
-  {
-    title: "AI Engineer",
-    match: 92,
-    description:
-      "Design and build intelligent systems using machine learning, deep learning, and data pipelines.",
-  },
-  {
-    title: "Data Scientist",
-    match: 87,
-    description:
-      "Extract insights from complex data through statistical analysis, visualization, and predictive modeling.",
-  },
-  {
-    title: "Product Analyst",
-    match: 81,
-    description:
-      "Combine analytical skills with product sense to drive data-informed decisions in tech companies.",
-  },
-];
+// Career paths will be dynamic based on dna.recommended_domains
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -115,35 +96,26 @@ export default function DNAResult({ dna, onRetake }: DNAResultProps) {
             Top Recommendation
           </span>
         </div>
-        <h2 className="text-2xl font-bold mb-1">AI Engineer</h2>
-        <p className="text-lg text-gradient font-semibold">92% Match</p>
+        <h2 className="text-2xl font-bold mb-1">{dna.recommended_domains[0] || "AI Engineer"}</h2>
+        <p className="text-lg text-gradient font-semibold">Excellent Match</p>
       </motion.div>
 
       {/* Career paths */}
       <motion.div variants={fadeUp} className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Recommended Career Paths</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {careerPaths.map((path) => (
+          {dna.recommended_domains.map((path) => (
             <motion.div
-              key={path.title}
+              key={path}
               whileHover={{ scale: 1.02 }}
               className="rounded-xl border border-border bg-card p-5 hover:border-brand-primary/20 transition-all"
             >
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold">{path.title}</h3>
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    path.match >= 90
-                      ? "bg-brand-success/10 text-brand-success"
-                      : "bg-brand-primary/10 text-brand-primary"
-                  }`}
-                >
-                  {path.match}%
+                <h3 className="text-sm font-semibold">{path}</h3>
+                <span className="bg-brand-success/10 text-brand-success text-xs font-bold px-2 py-0.5 rounded-full">
+                  Match
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {path.description}
-              </p>
             </motion.div>
           ))}
         </div>
@@ -153,13 +125,13 @@ export default function DNAResult({ dna, onRetake }: DNAResultProps) {
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <button
           onClick={() => {
-            // TODO: Connect to API endpoint — save DNA results
-            console.log("Saving DNA results:", dna);
+            navigator.clipboard.writeText(`${window.location.origin}/dashboard`);
+            alert("Link copied to clipboard!");
           }}
           className="inline-flex items-center gap-2 h-11 px-6 rounded-xl bg-brand-primary text-white font-semibold text-sm hover:bg-brand-primary/90 transition-all shadow-lg shadow-brand-primary/25"
         >
           <Save className="h-4 w-4" />
-          Save Results
+          Share Passport
         </button>
         <button
           onClick={onRetake}

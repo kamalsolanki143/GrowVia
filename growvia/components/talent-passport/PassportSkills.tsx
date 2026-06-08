@@ -5,7 +5,9 @@ import { motion } from "framer-motion";
 import { X, Plus } from "lucide-react";
 
 interface PassportSkillsProps {
+  initialSkills?: string[];
   editable?: boolean;
+  onSave?: (skills: string[]) => void;
 }
 
 const defaultSkills = [
@@ -20,21 +22,27 @@ const defaultSkills = [
 ];
 
 export default function PassportSkills({
+  initialSkills = [],
   editable = false,
+  onSave,
 }: PassportSkillsProps) {
-  const [skills, setSkills] = useState<string[]>(defaultSkills);
+  const [skills, setSkills] = useState<string[]>(initialSkills.length > 0 ? initialSkills : defaultSkills);
   const [inputValue, setInputValue] = useState("");
 
   const addSkill = () => {
     const trimmed = inputValue.trim();
     if (trimmed && !skills.includes(trimmed)) {
-      setSkills([...skills, trimmed]);
+      const newSkills = [...skills, trimmed];
+      setSkills(newSkills);
       setInputValue("");
+      if (onSave) onSave(newSkills);
     }
   };
 
   const removeSkill = (skill: string) => {
-    setSkills(skills.filter((s) => s !== skill));
+    const newSkills = skills.filter((s) => s !== skill);
+    setSkills(newSkills);
+    if (onSave) onSave(newSkills);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

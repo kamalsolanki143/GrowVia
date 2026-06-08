@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { TrendingUp, Radar, Flame, Dna, Search, BadgeCheck, ArrowRight } from "lucide-react";
@@ -7,9 +8,7 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import MissionCard from "@/components/dashboard/MissionCard";
 import CareerReadiness from "@/components/dashboard/CareerReadiness";
 import OpportunityPreview from "@/components/dashboard/OpportunityPreview";
-import { mockUser } from "@/mock/user";
-import { mockMissions } from "@/mock/missions";
-import { mockOpportunities } from "@/mock/opportunities";
+import { supabase } from "@/lib/supabase";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -36,12 +35,61 @@ function getGreeting() {
 }
 
 export default function DashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [dna, setDna] = useState<any>(null);
+  const [missions, setMissions] = useState<any[]>([]);
+  const [recentOpps, setRecentOpps] = useState<any[]>([]);
+  const [appliedCount, setAppliedCount] = useState(0);
+
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+
+  useEffect(() => {
+    async function loadDashboard() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [
+        { data: profData },
+        { data: dnaData },
+        { data: missionData },
+        { data: oppsData },
+        { data: savedOpps },
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("career_dna").select("*").eq("user_id", user.id).order('completed_at', { ascending: false }).limit(1).single(),
+        supabase.from("missions").select("*").eq("user_id", user.id).limit(5),
+        supabase.from("opportunities").select("*").order("created_at", { ascending: false }).limit(3),
+        supabase.from("user_saved_opportunities").select("*").eq("user_id", user.id)
+      ]);
+
+      setProfile(profData);
+      setDna(dnaData);
+      setMissions(missionData || []);
+      setRecentOpps(oppsData || []);
+      setAppliedCount(savedOpps?.length || 0);
+      setLoading(false);
+    }
+    loadDashboard();
+  }, []);
+
+  // Calculate career readiness score
+  let readinessScore = 0;
+  if (profile?.full_name) readinessScore += 20;
+  if (dna) readinessScore += 30;
+  if (missions.some(m => m.is_completed)) readinessScore += 10;
+  if (appliedCount > 0) readinessScore += 20;
+  // +20 for passport filled (assuming basic details complete)
+  if (profile?.college) readinessScore += 20;
+
+  if (loading) {
+    return <div className="flex h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-t-transparent" /></div>;
+  }
 
   return (
     <motion.div
@@ -56,7 +104,7 @@ export default function DashboardPage() {
         className="rounded-2xl border border-border bg-gradient-to-r from-brand-primary/10 via-violet-600/5 to-transparent p-6 sm:p-8"
       >
         <h1 className="text-2xl sm:text-3xl font-bold">
-          {getGreeting()}, {mockUser.name.split(" ")[0]} 👋
+          {getGreeting()}, {profile?.full_name?.split(" ")[0] || 'Explorer'} 👋
         </h1>
         <p className="text-muted-foreground mt-1">{today}</p>
       </motion.div>
@@ -68,22 +116,20 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatsCard
               icon={TrendingUp}
-              label="Talent Score"
-              value={mockUser.talent_score}
-              trend="+5 this week"
+              label="Career Readiness"
+              value={`${readinessScore}%`}
               gradient="from-cyan-500 to-blue-500"
             />
             <StatsCard
               icon={Radar}
-              label="Opportunities Found"
-              value={mockOpportunities.length}
-              trend="2 new today"
+              label="Opportunities Applied"
+              value={appliedCount}
               gradient="from-violet-500 to-purple-600"
             />
             <StatsCard
               icon={Flame}
-              label="Streak Days"
-              value={`${mockUser.streak_days} 🔥`}
+              label="Missions Done"
+              value={missions.filter(m => m.is_completed).length}
               gradient="from-amber-500 to-orange-500"
             />
           </div>
@@ -91,7 +137,7 @@ export default function DashboardPage() {
 
         {/* Career Readiness */}
         <motion.div variants={fadeUp}>
-          <CareerReadiness score={mockUser.talent_score} />
+          <CareerReadiness score={readinessScore} />
         </motion.div>
       </div>
 
@@ -105,14 +151,19 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-semibold">Today&apos;s Missions</h2>
             <span className="text-xs text-muted-foreground">
-              {mockMissions.filter((m) => m.completed).length}/{mockMissions.length} done
+              {missions.filter((m) => m.is_completed).length}/{missions.length} done
             </span>
           </div>
           <div className="space-y-3">
-            {/* TODO: Replace mock data with real fetch */}
-            {mockMissions.map((mission) => (
-              <MissionCard key={mission.id} mission={mission} />
-            ))}
+            {missions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Check back tomorrow for new missions.</p>
+            ) : (
+              missions.map((mission) => (
+                <MissionCard key={mission.id} mission={mission} onComplete={() => {
+                  setMissions(missions.map(m => m.id === mission.id ? { ...m, is_completed: true } : m));
+                }} />
+              ))
+            )}
           </div>
         </motion.div>
 
@@ -131,8 +182,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {/* TODO: Replace mock data with real fetch */}
-            {mockOpportunities.slice(0, 3).map((opp) => (
+            {recentOpps.map((opp) => (
               <OpportunityPreview key={opp.id} opportunity={opp} />
             ))}
           </div>

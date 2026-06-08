@@ -1,8 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, ExternalLink, Building2 } from "lucide-react";
+import { Calendar, ExternalLink, Building2, CheckCircle2 } from "lucide-react";
 import type { Opportunity } from "@/types";
+import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -16,6 +18,8 @@ const typeStyles: Record<string, { bg: string; text: string }> = {
 };
 
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
+  const [applied, setApplied] = useState(false);
+
   const daysLeft = Math.max(
     0,
     Math.ceil(
@@ -23,6 +27,23 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         (1000 * 60 * 60 * 24)
     )
   );
+
+  const handleApply = async () => {
+    if (applied) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      // Avoid duplicate insert by checking if already saved (optional) but for hackathon insert is fine if PK is not composite
+      await supabase.from('user_saved_opportunities').insert({
+        user_id: user.id,
+        opportunity_id: opportunity.id,
+        status: 'applied'
+      });
+    }
+    setApplied(true);
+    if (opportunity.link) {
+      window.open(opportunity.link, '_blank');
+    }
+  };
 
   const typeStyle = typeStyles[opportunity.type] ?? {
     bg: "bg-muted",
@@ -54,7 +75,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           <div
             className={`px-2.5 py-1 rounded-full text-xs font-bold border ${matchColor}`}
           >
-            {opportunity.match_score}% Match
+            {opportunity.match_score || 85}% Match
           </div>
         </div>
 
@@ -88,9 +109,16 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
               {daysLeft > 0 ? `${daysLeft} days left` : "Deadline passed"}
             </span>
           </div>
-          <button className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-brand-primary text-white text-xs font-semibold hover:bg-brand-primary/90 transition-all shadow-md shadow-brand-primary/20">
-            Apply Now
-            <ExternalLink className="h-3 w-3" />
+          <button 
+            onClick={handleApply}
+            className={`inline-flex items-center gap-1.5 h-8 px-4 rounded-lg text-white text-xs font-semibold transition-all shadow-md ${
+              applied 
+                ? 'bg-brand-success shadow-brand-success/20 cursor-default' 
+                : 'bg-brand-primary hover:bg-brand-primary/90 shadow-brand-primary/20'
+            }`}
+          >
+            {applied ? "Applied" : "Apply Now"}
+            {applied ? <CheckCircle2 className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
           </button>
         </div>
       </div>

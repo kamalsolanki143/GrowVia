@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import PageLoader from "@/components/shared/PageLoader";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,8 +48,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <PageLoader />
-          {children}
+          <ToastProvider>
+            <PageLoader />
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

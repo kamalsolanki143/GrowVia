@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BadgeCheck, Copy, Check, ExternalLink } from "lucide-react";
 import Link from "next/link";
@@ -8,11 +8,35 @@ import PassportHeader from "@/components/talent-passport/PassportHeader";
 import PassportDNA from "@/components/talent-passport/PassportDNA";
 import PassportSkills from "@/components/talent-passport/PassportSkills";
 import PassportBadges from "@/components/talent-passport/PassportBadges";
-import { mockUser, mockDNA } from "@/mock/user";
+import { mockDNA } from "@/mock/user";
+import { supabase } from "@/lib/supabase";
 
 export default function TalentPassportPage() {
   const [copied, setCopied] = useState(false);
-  const passportUrl = `/passport/${mockUser.username}`;
+  const [profile, setProfile] = useState<any>(null);
+  const [dna, setDna] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [{ data: prof }, { data: dnaData }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('career_dna').select('*').eq('user_id', user.id).order('completed_at', { ascending: false }).limit(1).single()
+      ]);
+      setProfile(prof);
+      let parsedDna = mockDNA;
+      if (dnaData?.result) {
+        parsedDna = typeof dnaData.result === 'string' ? JSON.parse(dnaData.result) : dnaData.result;
+      }
+      setDna(parsedDna);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const passportUrl = profile?.username ? `/passport/${profile.username}` : '#';
 
   const handleCopy = async () => {
     try {
@@ -25,6 +49,10 @@ export default function TalentPassportPage() {
       console.log("Failed to copy");
     }
   };
+
+  if (loading) {
+    return <div className="flex h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-t-transparent" /></div>;
+  }
 
   return (
     <motion.div
@@ -76,12 +104,25 @@ export default function TalentPassportPage() {
 
       {/* Passport preview */}
       <div className="space-y-6">
-        {/* TODO: Replace mock data with real fetch */}
-        <PassportHeader user={mockUser} />
+        <PassportHeader 
+          user={profile} 
+          editable 
+          onUpdate={(updates) => setProfile({ ...profile, ...updates })} 
+        />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PassportDNA dna={mockDNA} />
+          <PassportDNA dna={dna} />
           <div className="space-y-6">
-            <PassportSkills editable />
+            <PassportSkills 
+              initialSkills={profile?.skills || []} 
+              editable 
+              onSave={async (skills) => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  await supabase.from('profiles').update({ skills }).eq('id', user.id);
+                  setProfile({ ...profile, skills });
+                }
+              }}
+            />
             <PassportBadges />
           </div>
         </div>

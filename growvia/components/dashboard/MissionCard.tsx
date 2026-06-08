@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Zap } from "lucide-react";
-import type { Mission } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 interface MissionCardProps {
-  mission: Mission;
+  mission: any;
+  onComplete?: () => void;
 }
 
-export default function MissionCard({ mission }: MissionCardProps) {
-  const [completed, setCompleted] = useState(mission.completed);
+export default function MissionCard({ mission, onComplete }: MissionCardProps) {
+  const [completed, setCompleted] = useState(mission.is_completed || false);
 
   const categoryColors: Record<string, string> = {
     DSA: "bg-cyan-500/10 text-cyan-500",
@@ -30,9 +31,17 @@ export default function MissionCard({ mission }: MissionCardProps) {
     >
       {/* Checkbox */}
       <button
-        onClick={() => {
-          setCompleted(!completed);
-          // TODO: Connect to API endpoint
+        onClick={async () => {
+          if (completed) return; // Prevent unchecking if not desired, or toggle it
+          const newStatus = !completed;
+          setCompleted(newStatus);
+          
+          await supabase
+            .from('missions')
+            .update({ is_completed: newStatus })
+            .eq('id', mission.id);
+            
+          if (onComplete) onComplete();
         }}
         className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
           completed
@@ -50,21 +59,21 @@ export default function MissionCard({ mission }: MissionCardProps) {
             completed ? "line-through text-muted-foreground" : ""
           }`}
         >
-          {mission.task}
+          {mission.title || mission.task}
         </p>
         <span
           className={`inline-block text-xs px-2 py-0.5 rounded-full mt-1 font-medium ${
-            categoryColors[mission.category] ?? "bg-muted text-muted-foreground"
+            categoryColors[mission.category || 'Learning'] ?? "bg-muted text-muted-foreground"
           }`}
         >
-          {mission.category}
+          {mission.category || 'Learning'}
         </span>
       </div>
 
       {/* XP Badge */}
       <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-accent/10 text-brand-accent text-xs font-bold shrink-0">
         <Zap className="h-3 w-3" />
-        {mission.xp} XP
+        {mission.points || mission.xp} XP
       </div>
     </motion.div>
   );

@@ -84,7 +84,7 @@ export default function DNAQuestionCard({
                       : "text-muted-foreground"
                   }`}
                 >
-                  {option}
+                  {option.text}
                 </span>
               </div>
             </motion.button>

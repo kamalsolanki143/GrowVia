@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Share2 } from "lucide-react";
 import Logo from "@/components/shared/Logo";
@@ -7,16 +8,37 @@ import PassportHeader from "@/components/talent-passport/PassportHeader";
 import PassportDNA from "@/components/talent-passport/PassportDNA";
 import PassportSkills from "@/components/talent-passport/PassportSkills";
 import PassportBadges from "@/components/talent-passport/PassportBadges";
-import { mockUser, mockDNA } from "@/mock/user";
+import { mockDNA } from "@/mock/user";
+import { supabase } from "@/lib/supabase";
 
 export default function PublicPassportClient({ username }: { username?: string }) {
-  // TODO: Replace mock data with real fetch based on username param
+  const [profile, setProfile] = useState<any>(null);
+  const [dna, setDna] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      if (!username) return;
+      const { data: prof } = await supabase.from('profiles').select('*').eq('username', username).single();
+      if (prof) {
+        setProfile(prof);
+        const { data: dnaData } = await supabase.from('career_dna').select('*').eq('user_id', prof.id).order('completed_at', { ascending: false }).limit(1).single();
+        let parsedDna = mockDNA;
+        if (dnaData?.result) {
+          parsedDna = typeof dnaData.result === 'string' ? JSON.parse(dnaData.result) : dnaData.result;
+        }
+        setDna(parsedDna);
+      }
+      setLoading(false);
+    }
+    loadData();
+  }, [username]);
 
   const handleShare = async () => {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${mockUser.name}'s Talent Passport`,
+          title: `${profile?.full_name || 'Explorer'}'s Talent Passport`,
           url: window.location.href,
         });
       } else if (navigator.clipboard) {
@@ -27,6 +49,14 @@ export default function PublicPassportClient({ username }: { username?: string }
       console.error("Error sharing:", error);
     }
   };
+
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-t-transparent" /></div>;
+  }
+
+  if (!profile) {
+    return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">User not found</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,12 +92,12 @@ export default function PublicPassportClient({ username }: { username?: string }
         transition={{ duration: 0.5 }}
         className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6"
       >
-        <PassportHeader user={mockUser} isPublic />
+        <PassportHeader user={profile} isPublic />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PassportDNA dna={mockDNA} />
+          <PassportDNA dna={dna} />
           <div className="space-y-6">
-            <PassportSkills />
+            <PassportSkills initialSkills={profile?.skills || []} editable={false} />
             <PassportBadges />
           </div>
         </div>

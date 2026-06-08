@@ -8,7 +8,8 @@ import DNAQuestionCard from "@/components/career-dna/DNAQuestion";
 import DNAProgress from "@/components/career-dna/DNAProgress";
 import DNAResult from "@/components/career-dna/DNAResult";
 import { dnaQuestions } from "@/mock/dna";
-import { mockDNA } from "@/mock/user";
+import { supabase } from "@/lib/supabase";
+import type { CareerDNA } from "@/types";
 
 type Stage = "intro" | "questions" | "loading" | "results";
 
@@ -18,6 +19,7 @@ export default function CareerDNAPage() {
   const [answers, setAnswers] = useState<(number | null)[]>(
     new Array(dnaQuestions.length).fill(null)
   );
+  const [dnaResult, setDnaResult] = useState<CareerDNA | null>(null);
 
   const handleStart = () => {
     setStage("questions");
@@ -31,14 +33,88 @@ export default function CareerDNAPage() {
     setAnswers(newAnswers);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestion < dnaQuestions.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
     } else {
-      // Last question — show loading then results
       setStage("loading");
-      // TODO: Replace mock data with real fetch — send answers to backend
-      console.log("DNA answers:", answers);
+      
+      // Compute DNA
+      const scores = {
+        Technical: 0,
+        Creative: 0,
+        Social: 0,
+        Analytical: 0,
+        Leadership: 0
+      };
+
+      answers.forEach((ansIndex, qIndex) => {
+        if (ansIndex !== null) {
+          const cat = dnaQuestions[qIndex].options[ansIndex].category;
+          scores[cat] += 1;
+        }
+      });
+
+      // Find top category
+      let topCategory = "Technical";
+      let maxScore = -1;
+      Object.entries(scores).forEach(([cat, score]) => {
+        if (score > maxScore) {
+          maxScore = score;
+          topCategory = cat;
+        }
+      });
+
+      let paths: string[] = [];
+      let top_domain = "";
+      switch(topCategory) {
+        case "Technical":
+          paths = ["Software Engineer", "Data Scientist", "DevOps"];
+          top_domain = "Engineering";
+          break;
+        case "Creative":
+          paths = ["UI/UX Designer", "Content Creator", "Product Designer"];
+          top_domain = "Design";
+          break;
+        case "Social":
+          paths = ["HR", "Marketing", "Community Manager"];
+          top_domain = "People";
+          break;
+        case "Analytical":
+          paths = ["Data Analyst", "Finance", "Research"];
+          top_domain = "Data";
+          break;
+        case "Leadership":
+          paths = ["Entrepreneur", "Project Manager", "Consultant"];
+          top_domain = "Management";
+          break;
+      }
+
+      const total = dnaQuestions.length;
+      const computedResult: CareerDNA = {
+        builder_score: Math.round((scores.Technical / total) * 100),
+        designer_score: Math.round((scores.Creative / total) * 100),
+        leader_score: Math.round((scores.Leadership / total) * 100),
+        analytical_score: Math.round((scores.Analytical / total) * 100),
+        researcher_score: Math.round((scores.Social / total) * 100), // reusing researcher as social/people for now
+        top_domain: top_domain,
+        recommended_domains: paths
+      };
+
+      setDnaResult(computedResult);
+
+      // Save to Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("career_dna").insert({
+          user_id: user.id,
+          answers: answers.map((a, i) => ({ qId: dnaQuestions[i].id, ansIndex: a })),
+          result: computedResult,
+          career_paths: paths,
+          strengths: [topCategory],
+        });
+      }
+
       setTimeout(() => setStage("results"), 2000);
     }
   };
@@ -65,7 +141,12 @@ export default function CareerDNAPage() {
 
       {stage === "questions" && (
         <div className="max-w-2xl mx-auto py-8">
-          <DNAProgress current={currentQuestion} total={dnaQuestions.length} />
+          <DNAProgress 
+            current={currentQuestion} 
+            total={dnaQuestions.length} 
+            answers={answers}
+            questions={dnaQuestions}
+          />
           <DNAQuestionCard
             question={dnaQuestions[currentQuestion]}
             selectedOption={answers[currentQuestion]}
@@ -104,8 +185,8 @@ export default function CareerDNAPage() {
         </motion.div>
       )}
 
-      {stage === "results" && (
-        <DNAResult dna={mockDNA} onRetake={handleRetake} />
+      {stage === "results" && dnaResult && (
+        <DNAResult dna={dnaResult} onRetake={handleRetake} />
       )}
     </motion.div>
   );

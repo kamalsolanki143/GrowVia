@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import Logo from "@/components/shared/Logo";
-import { mockUser } from "@/mock/user";
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   {
@@ -46,7 +46,25 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setProfile({ ...data, email: user.email });
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -108,14 +126,14 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           {/* Avatar */}
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-primary to-violet-600 flex items-center justify-center shrink-0">
             <span className="text-white text-xs font-bold">
-              {mockUser.name.charAt(0)}
+              {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "G"}
             </span>
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{mockUser.name}</p>
+              <p className="text-sm font-medium truncate">{profile?.full_name || "Explorer"}</p>
               <p className="text-xs text-muted-foreground truncate">
-                {mockUser.email}
+                {profile?.email || ""}
               </p>
             </div>
           )}
@@ -125,8 +143,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           className={`flex items-center gap-3 w-full h-9 px-3 rounded-lg text-sm text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors mt-1 ${
             collapsed ? "justify-center" : ""
           }`}
-          // TODO: Replace with Supabase auth logout
-          onClick={() => console.log("Logout clicked")}
+          onClick={handleLogout}
         >
           <LogOut className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Logout</span>}

@@ -1,14 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import ThemeToggle from "@/components/shared/ThemeToggle";
-import { mockUser } from "@/mock/user";
+import { supabase } from "@/lib/supabase";
 
 interface DashboardNavbarProps {
   onMenuClick: () => void;
 }
 
 export default function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setProfile(data);
+      }
+    }
+    loadProfile();
+  }, []);
+
   return (
     <header className="sticky top-0 z-20 h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 sm:px-6 gap-4">
       {/* Mobile menu button */}
@@ -30,7 +44,7 @@ export default function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
         {/* Avatar */}
         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-primary to-violet-600 flex items-center justify-center cursor-pointer">
           <span className="text-white text-xs font-bold">
-            {mockUser.name.charAt(0)}
+            {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "G"}
           </span>
         </div>
       </div>

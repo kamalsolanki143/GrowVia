@@ -32,6 +32,8 @@ export interface Opportunity {
   match_score: number;
   deadline: string;
   description: string;
+  link?: string;
+  apply_url?: string;
 }
 
 export interface Mission {
@@ -42,10 +44,16 @@ export interface Mission {
   category: "DSA" | "Opportunity" | "Learning" | "Profile";
 }
 
+export interface DNAOption {
+  text: string;
+  category: "Technical" | "Creative" | "Social" | "Analytical" | "Leadership";
+  value: number;
+}
+
 export interface DNAQuestion {
   id: number;
   question: string;
-  options: string[];
+  options: DNAOption[];
 }
 
 export interface DNATraitBar {
