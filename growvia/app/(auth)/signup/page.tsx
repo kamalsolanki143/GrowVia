@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -43,8 +43,53 @@ export default function SignupPage() {
   const [errors, setErrors] = useState<FormErrors & { general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGithubLoading, setIsGithubLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  // Turnstile CAPTCHA
+  const captchaToken = useRef<string>("");
+  const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const renderWidget = () => {
+      if (
+        turnstileContainerRef.current &&
+        typeof window !== "undefined" &&
+        (window as any).turnstile
+      ) {
+        turnstileWidgetId.current = (window as any).turnstile.render(
+          turnstileContainerRef.current,
+          {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
+            callback: (token: string) => { captchaToken.current = token; },
+            "expired-callback": () => { captchaToken.current = ""; },
+            size: "invisible",
+            execution: "execute", // trigger manually on submit
+          }
+        );
+      }
+    };
+
+    if ((window as any).turnstile) {
+      renderWidget();
+    } else {
+      const interval = setInterval(() => {
+        if ((window as any).turnstile) {
+          clearInterval(interval);
+          renderWidget();
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+
+    return () => {
+      if (turnstileWidgetId.current !== null && (window as any).turnstile) {
+        (window as any).turnstile.remove(turnstileWidgetId.current);
+      }
+    };
+  }, []);
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
 
@@ -67,25 +112,57 @@ export default function SignupPage() {
     if (!validate()) return;
     setIsLoading(true);
     setErrors({});
-    
-    const { error } = await supabase.auth.signUp({
+
+    // Step 1: Create the account
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          full_name: name,
-        },
+        data: { full_name: name },
       },
     });
 
+    if (signUpError) {
+      setIsLoading(false);
+      toast(signUpError.message, "error");
+      setErrors({ general: signUpError.message });
+      return;
+    }
+
+    // Step 2: Immediately sign in with the same credentials.
+    // This is needed because Supabase requires email confirmation by default.
+    // Signing in right after signup bypasses the "Email not confirmed" error
+    // since the session is established in the same flow before the user tries
+    // to log in separately.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     setIsLoading(false);
-    
+
+    if (signInError) {
+      // Account was created but auto-login failed (e.g. email confirmation enforced).
+      // Tell the user to check their email instead of showing a confusing error.
+      toast("Account created! Please check your email to confirm, then log in.", "success");
+      router.push("/login");
+    } else {
+      toast("Welcome to Growvia! 🚀", "success");
+      router.push("/dashboard");
+    }
+  };
+
+  const handleGithubSignup = async () => {
+    setIsGithubLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+      },
+    });
     if (error) {
       toast(error.message, "error");
-      setErrors({ general: error.message });
-    } else {
-      toast("Account created successfully!", "success");
-      router.push("/dashboard");
+      setIsGithubLoading(false);
     }
   };
 
@@ -152,12 +229,15 @@ export default function SignupPage() {
             Fill in your details to get started.
           </p>
 
+          {/* Hidden Turnstile container */}
+          <div ref={turnstileContainerRef} className="hidden" />
+
           {/* Google button */}
           <button
             type="button"
             onClick={handleGoogleSignup}
             disabled={isGoogleLoading}
-            className="w-full h-11 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center gap-3 text-sm font-medium transition-colors mb-6 disabled:opacity-50"
+            className="w-full h-11 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center gap-3 text-sm font-medium transition-colors mb-3 disabled:opacity-50"
           >
             {isGoogleLoading ? (
               <div className="h-4 w-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
@@ -170,6 +250,25 @@ export default function SignupPage() {
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
                 Continue with Google
+              </>
+            )}
+          </button>
+
+          {/* GitHub button */}
+          <button
+            type="button"
+            onClick={handleGithubSignup}
+            disabled={isGithubLoading}
+            className="w-full h-11 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center gap-3 text-sm font-medium transition-colors mb-6 disabled:opacity-50"
+          >
+            {isGithubLoading ? (
+              <div className="h-4 w-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+            ) : (
+              <>
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
+                </svg>
+                Continue with GitHub
               </>
             )}
           </button>
