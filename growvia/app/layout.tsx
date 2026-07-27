@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import Script from "next/script";
 import PageLoader from "@/components/shared/PageLoader";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +44,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        {/* Cloudflare Turnstile — loads once globally for all pages */}
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          strategy="afterInteractive"
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
