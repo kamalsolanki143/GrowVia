@@ -41,9 +41,10 @@ export default function OpportunityRadarPage() {
   }, []);
   const filtered = useMemo(() => {
     return opportunities.filter((opp) => {
+      const organization = opp.organization || opp.company || "";
       const matchesSearch = opp.title
         .toLowerCase()
-        .includes(searchQuery.toLowerCase()) || (opp.company || '').toLowerCase().includes(searchQuery.toLowerCase());
+        .includes(searchQuery.toLowerCase()) || organization.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType =
         typeFilter === "all" || opp.type === typeFilter;
       const matchesDomain =

@@ -18,6 +18,7 @@ const typeColors: Record<string, string> = {
 export default function OpportunityPreview({
   opportunity,
 }: OpportunityPreviewProps) {
+  const organization = opportunity.organization || opportunity.company || "Organization";
   const daysLeft = Math.max(
     0,
     Math.ceil(
@@ -49,7 +50,7 @@ export default function OpportunityPreview({
         <p className="text-sm font-medium truncate">{opportunity.title}</p>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-xs text-muted-foreground">
-            {opportunity.organization}
+            {organization}
           </span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full font-medium ${

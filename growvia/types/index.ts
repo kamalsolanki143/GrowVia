@@ -28,6 +28,7 @@ export interface Opportunity {
   title: string;
   type: "internship" | "fellowship" | "hackathon" | "competition";
   organization: string;
+  company?: string;
   domain: string;
   match_score: number;
   deadline: string;

@@ -33,6 +33,12 @@ function getPasswordStrength(password: string): {
   return { level: "strong", percent: 100, color: "bg-emerald-500" };
 }
 
+function generateUsername(name: string): string {
+  const base = name.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "") || "user";
+  const suffix = Math.random().toString(36).slice(2, 6);
+  return `${base}_${suffix}`;
+}
+
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -112,13 +118,14 @@ export default function SignupPage() {
     if (!validate()) return;
     setIsLoading(true);
     setErrors({});
+    const username = generateUsername(name);
 
     // Step 1: Create the account
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: name },
+        data: { full_name: name, username },
       },
     });
 

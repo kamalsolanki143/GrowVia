@@ -68,10 +68,11 @@ create policy "Users can manage own missions" on missions for all using (auth.ui
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, full_name, avatar_url)
+  insert into public.profiles (id, full_name, username, avatar_url)
   values (
     new.id,
     new.raw_user_meta_data->>'full_name',
+    coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8)),
     new.raw_user_meta_data->>'avatar_url'
   );
   return new;

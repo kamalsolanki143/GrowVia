@@ -4,7 +4,7 @@
 
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { adminSupabase } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { signupSchema } from '@/lib/validations'
 import { generateUsername, successResponse, errorResponse } from '@/lib/utils'
 
@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
     // RLS policy "Users can view own profile" would block this insert.
     // Admin client bypasses RLS safely since we're on the server.
     const username = generateUsername(name)
+
+    const adminSupabase = createAdminClient()
 
     const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
