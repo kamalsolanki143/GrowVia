@@ -19,6 +19,8 @@ const typeStyles: Record<string, { bg: string; text: string }> = {
 
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const [applied, setApplied] = useState(false);
+  const organization = opportunity.organization || opportunity.company || "Organization";
+  const applyUrl = opportunity.apply_url || opportunity.link;
 
   const daysLeft = Math.max(
     0,
@@ -40,8 +42,8 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       });
     }
     setApplied(true);
-    if (opportunity.link) {
-      window.open(opportunity.link, '_blank');
+    if (applyUrl) {
+      window.open(applyUrl, '_blank');
     }
   };
 
@@ -70,7 +72,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Building2 className="h-4 w-4" />
-            {opportunity.organization}
+            {organization}
           </div>
           <div
             className={`px-2.5 py-1 rounded-full text-xs font-bold border ${matchColor}`}

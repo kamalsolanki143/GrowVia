@@ -15,6 +15,22 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const protectedRoutes = ['/dashboard', '/career-dna', '/opportunity-radar', '/talent-passport']
+  const authRoutes = ['/login', '/signup']
+  const isProtectedRoute = protectedRoutes.some((r) => pathname.startsWith(r))
+
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  ) {
+    if (isProtectedRoute) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -41,15 +57,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
-
-  // Routes that require login
-  const protectedRoutes = ['/dashboard', '/career-dna', '/opportunity-radar', '/talent-passport']
-  // Routes that logged-in users shouldn't see
-  const authRoutes = ['/login', '/signup']
-
   // Not logged in + trying to access protected route → send to login
-  if (protectedRoutes.some((r) => pathname.startsWith(r)) && !user) {
+  if (isProtectedRoute && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
